@@ -1,12 +1,10 @@
 #include "Annealing.h"
 #include <iostream>
 
-static std::mt19937 gen(time(0));
-
-point CauchyAnnealing(int D, std::function<float(point)> ObjectiveFunction,  std::vector<std::pair<float, float>> limits, float T0, float T_min, int L0){
+point CauchyAnnealing(int D, std::function<float(point)> ObjectiveFunction,  limit_set& limits, float T0, float T_min, int L0){
 	float T_current = T0;
 
-	point Point_current = generatePoint(D);
+	point Point_current = generatePoint(D, limits);
 	limitPoint(Point_current, limits);
 
 	point Point_best = Point_current;
@@ -47,7 +45,7 @@ point CauchyAnnealing(int D, std::function<float(point)> ObjectiveFunction,  std
 point generateNextCauchyPoint(point p, float T){
 	for(int i = 0; i < p.size(); i++){
 		std::cauchy_distribution<float> distribution(p[i], T);
-		p[i] = distribution(gen);
+		p[i] = distribution(RandomGenerator);
 	}
 	return p;
 }
@@ -58,37 +56,4 @@ float acceptanceProbability(float deltaE, float temperature) {
     } else {
     	return std::exp(-deltaE / temperature);
     }
-}
-
-bool isAccepting(float Probability){
-	std::uniform_real_distribution<float> distribution(0, 1);
-
-	float i = distribution(gen);
-
-	if(i <= Probability) {
-		return true;
-	}
-
-	return false;
-}
-
-point generatePoint(int D){
-	std::uniform_real_distribution<float> distribution(0, 1);
-
-	point newPoint(D);
-
-	for(float& p : newPoint)
-		p = distribution(gen);
-
-	return newPoint;
-}
-
-void limitPoint(point& Point, std::vector<std::pair<float, float>>& limits){
-	for(int i = 0; i < Point.size(); i++){
-		float& p = Point[i];
-		if(p < limits[i].first)
-			p = limits[i].first;
-		else if(p > limits[i].second)
-			p = limits[i].second;
-	}
 }

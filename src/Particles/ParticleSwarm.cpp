@@ -1,9 +1,7 @@
 #include "ParticleSwarm.h"
 #include <iostream>
 
-static std::mt19937 gen(time(0));
-
-point ParticleSwarm(int D, std::function<float(point)> ObjectiveFunction, std::vector<std::pair<float, float>>& limits, int particleCount, int iterations, float inertW, float c1, float c2){
+point ParticleSwarm(int D, std::function<float(point)> ObjectiveFunction, limit_set& limits, int particleCount, int iterations, float inertW, float c1, float c2){
 
 	point globalBestSolution;
 	float globalBestFitness = std::numeric_limits<float>::max();
@@ -37,7 +35,7 @@ point ParticleSwarm(int D, std::function<float(point)> ObjectiveFunction, std::v
 	return globalBestSolution;
 }
 
-std::vector<Particle> generateSwarm(int D, std::function<float(point)> objFunc, std::vector<std::pair<float, float>>& limits, int count, point& globalBest, float& globalFitness){
+std::vector<Particle> generateSwarm(int D, std::function<float(point)> objFunc, limit_set& limits, int count, point& globalBest, float& globalFitness){
 	std::vector<Particle> swarm(count);
 
 	for (int i = 0; i < count; i++){
@@ -56,19 +54,19 @@ void Particle::updateVelocity(point& globalBest, float inertW, float c1, float c
 	std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
 	for (int i = 0; i < x.size(); i++) {
-		double r1 = distribution(gen);
-		double r2 = distribution(gen);
+		double r1 = distribution(RandomGenerator);
+		double r2 = distribution(RandomGenerator);
 		v[i] = inertW*v[i] + c1*r1*(best[i] - x[i]) + c2*r2*(globalBest[i] - x[i]);
 	}
 }
 
-void Particle::updatePosition(std::vector<std::pair<float, float>>& limits){
+void Particle::updatePosition(limit_set& limits){
 	for(int i = 0; i < x.size(); i++)
 		x[i] += v[i];
 	limitPoint(x, limits);
 }
 
-Particle Particle::generate(int D, std::function<float(point)> objFunc, std::vector<std::pair<float, float>>& limits){
+Particle Particle::generate(int D, std::function<float(point)> objFunc, limit_set& limits){
 	Particle p;
 
 	p.x.resize(D);
@@ -77,7 +75,7 @@ Particle Particle::generate(int D, std::function<float(point)> objFunc, std::vec
 
 	for (int j = 0; j < D; ++j) {
 		std::uniform_real_distribution<double> positionDistribution(limits[j].first, limits[j].second);
-		p.x[j] = positionDistribution(gen);
+		p.x[j] = positionDistribution(RandomGenerator);
 		p.v[j] = 0.0;
 		p.best[j] = p.x[j];
 	}
@@ -85,14 +83,4 @@ Particle Particle::generate(int D, std::function<float(point)> objFunc, std::vec
 	p.bestFitness = objFunc(p.best);
 
 	return p;
-}
-
-void limitPoint(point& Point, std::vector<std::pair<float, float>> limits){
-	for(int i = 0; i < Point.size(); i++){
-		float& p = Point[i];
-		if(p < limits[i].first)
-			p = limits[i].first;
-		else if(p > limits[i].second)
-			p = limits[i].second;
-	}
 }

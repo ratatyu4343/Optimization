@@ -41,7 +41,6 @@ point CauchyAnnealing(int D, std::function<float(point)> ObjectiveFunction,  lim
 	return Point_best;
 }
 
-//need to be changed!!!!!!!!!!!!!
 point generateNextCauchyPoint(point p, float T){
 	for(int i = 0; i < p.size(); i++){
 		std::cauchy_distribution<float> distribution(p[i], T);

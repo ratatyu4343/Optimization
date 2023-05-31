@@ -4,6 +4,7 @@
 #include <vector>
 #include <random>
 #include <time.h>
+#include <algorithm>
 
 static std::mt19937 RandomGenerator(time(0));
 
@@ -17,5 +18,9 @@ std::vector<point> generatePoints(int D, int count, limit_set& limits);
 void limitPoint(point& Point, limit_set& limits);
 
 bool isAccepting(float Probability);
+
+float squareDifference(std::vector<float> p, std::vector<float> need_to_be);
+
+void normalize(std::vector<float>& v);
 
 #endif

@@ -43,3 +43,25 @@ bool isAccepting(float Probability){
 	return false;
 }
 
+float squareDifference(std::vector<float> p, std::vector<float> need_to_be) {
+    float squareDiff = 0.0f;
+    for (size_t i = 0; i < p.size(); ++i) {
+        float diff = p[i] - need_to_be[i];
+        squareDiff += diff * diff;
+    }
+
+    return squareDiff;
+}
+
+void normalize(std::vector<float>& v){
+	for(float& f : v){
+		f = std::log(f);
+	}
+
+	float maxx = *std::max_element(v.begin(), v.end());
+
+	for(float& f : v){
+		f /= maxx;
+	}
+}
+

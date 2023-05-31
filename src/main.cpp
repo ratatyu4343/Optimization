@@ -5,80 +5,187 @@
 #include "Annealing/Annealing.h"
 #include "Particles/ParticleSwarm.h"
 #include "Genetic/GeneticAlg.h"
-#include "matplot/matplot.h"
+#include "plotLib/matplotlib.h"
 
+namespace plt = matplotlibcpp;
+
+//egg holder function
 float objFunction(const std::vector<float>& p) {
-    // Example test function: Styblinski-Tang function
-    float sum = 0.0f;
-    for (float x : p) {
-    	x -= 2.903534;
-        sum += pow(x, 4) - 16.0f * pow(x, 2) + 5.0f * x;
-    }
-    return 0.5f * sum;
-}
+	using namespace std;
 
-float squareDifference(std::vector<float> p, std::vector<float> need_to_be) {
-    float squareDiff = 0.0f;
-    for (size_t i = 0; i < p.size(); ++i) {
-        float diff = p[i] - need_to_be[i];
-        squareDiff += diff * diff;
-    }
+    float x = p[0];
+    float y = p[1];
 
-    return std::sqrt(squareDiff);
-}
+    float term1 = -(y + 47) * sin(sqrt(fabs(x / 2 + (y + 47))));
+    float term2 = -x * sin(sqrt(fabs(x - (y + 47))));
 
-std::vector<double> linspace1(double start, double end, int numPoints) {
-    std::vector<double> result;
-    double step = (end - start) / (numPoints - 1);
-    for (int i = 0; i < numPoints; ++i) {
-        result.push_back(start + i * step);
-    }
-    return result;
-}
-
-std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>>
-meshgrid2(const std::vector<double>& x, const std::vector<double>& y) {
-    std::vector<std::vector<double>> X(x.size(), std::vector<double>(y.size()));
-    std::vector<std::vector<double>> Y(x.size(), std::vector<double>(y.size()));
-    for (size_t i = 0; i < x.size(); ++i) {
-        for (size_t j = 0; j < y.size(); ++j) {
-            X[i][j] = x[i];
-            Y[i][j] = y[j];
-        }
-    }
-    return std::make_pair(X, Y);
+    return term1 + term2;
 }
 
 int main() {
-	using namespace matplot;
+	limit_set limits = {{-512, 512},{-512, 512}};
+	std::vector<float> global_minimum{512, 404.2319};
 
-	auto [X, Y] = meshgrid2(linspace1(-5, +5, 40), linspace1(-5, +5, 40));
-	auto Z = transform(X, Y, [](double x, double y) {
-	        return 10 * 2 + pow(x, 2) - 10 * cos(2 * pi * x) + pow(y, 2) - 10 * cos(2 * pi * y);});
-	surf(X, Y, Z);
-	show();
+	std::vector<float> X;
+	std::vector<float> Y;
 
-	std::vector<std::pair<float, float>> limits = {{-5000, 5000}, {-5000, 5000}, {-5000, 5000}, {-5, 5}, {-5, 5}, {-5, 5}, {-5, 5}, {-5, 5}, {-5, 5}, {-5, 5}};
-	std::vector<float> need_to_be(5, 0);
-	int DIM = 2;
+	//genetic algorythm iterations
+	for(int i = 100; i <= 1000; i += 100) {
+		X.push_back(i);
+
+		float kvadrat;
+		for (int j = 0; j < 100; j++){
+			point ans = GeneticAlgorythm(2, i, objFunction, 20, 0.4, 0.1, limits);
+			kvadrat += squareDifference(ans, global_minimum);
+		}
+		kvadrat /= 100;
+		Y.push_back(kvadrat);
+	}
+	normalize(Y);
+	plt::plot(X, Y, "o-");
+	plt::xlabel("Кількість ітерацій");
+	plt::ylabel("Середнє значення різниці квадратів");
+	std::cout << "Plot 1 ready..." << std::endl;
+
+	X.resize(0);
+	Y.resize(0);
+	plt::figure();
+
+	//genetic algorythm mutations
+	for(float m = 0; m <= 1; m += 0.1) {
+		X.push_back(m);
+
+		float kvadrat;
+		for (int j = 0; j < 100; j++){
+			point ans = GeneticAlgorythm(2, 400, objFunction, 20, m, 0.1, limits);
+			kvadrat += squareDifference(ans, global_minimum);
+		}
+		kvadrat /= 100;
+		Y.push_back(kvadrat);
+	}
+	normalize(Y);
+	plt::plot(X, Y,  "o-");
+	plt::xlabel("Ймовірність мутації");
+	plt::ylabel("Середнє значення різниці квадратів");
+	std::cout << "Plot 2 ready..." << std::endl;
+
+	X.resize(0);
+	Y.resize(0);
+	plt::figure();
+
+	//genetic algorythm population size
+	for(int p = 10; p <= 220; p += 30) {
+		X.push_back(p);
+
+		float kvadrat;
+		for (int j = 0; j < 100; j++){
+			point ans = GeneticAlgorythm(2, 400, objFunction, p, 0.4, 0.1, limits);
+			kvadrat += squareDifference(ans, global_minimum);
+		}
+		kvadrat /= 100;
+		Y.push_back(kvadrat);
+	}
+	normalize(Y);
+	plt::plot(X, Y, "o-");
+	plt::xlabel("Розмір популяції");
+	plt::ylabel("Середнє значення різниці квадратів");
+	std::cout << "Plot 3 ready..." << std::endl;
+
+	X.resize(0);
+	Y.resize(0);
+	plt::figure();
+
+	//genetic algorythm testing
+	for (int j = 0; j < 100; j++){
+		point ans = GeneticAlgorythm(2, 1500, objFunction, 50, 0.5, 0.1, limits);
+		X.push_back(ans[0]);
+		Y.push_back(ans[1]);
+	}
+	plt::plot(X, Y, "o");
+	plt::xlabel("x1");
+	plt::ylabel("x2");
+	plt::xlim(480, 540);
+	plt::ylim(370, 480);
+	plt::plot({global_minimum[0]},{global_minimum[1]},"ro");
+
+	std::cout << "Plot 4 ready..." << std::endl;
 
 
-	std::vector<float> p1 = ParticleSwarm(DIM, objFunction, limits, 1000, 1000, 0.95, 1, 0.95);
+	//particle swarm iterations
+	for(int i = 100; i <= 3000; i += 100) {
+		X.push_back(i);
 
-	for(float p : p1)
-		std::cout << p << " ";
-	std::cout << "\n" << squareDifference(p1, need_to_be) << std::endl;
+		float kvadrat;
+		for (int j = 0; j < 100; j++){
+			point ans = ParticleSwarm(2, objFunction, limits, 100, i, 0.9, 1, 1);
+			kvadrat += squareDifference(ans, global_minimum);
+		}
+		kvadrat /= 100;
+		Y.push_back(kvadrat);
+	}
+	normalize(Y);
+	plt::plot(X, Y, "o-");
+	plt::xlabel("Кількість ітерацій");
+	plt::ylabel("Середнє значення різниці квадратів");
+	std::cout << "Plot 5 ready..." << std::endl;
 
-	std::vector<float> p2 = CauchyAnnealing(DIM, objFunction, limits, 7000, 0.01, 1);
+	X.resize(0);
+	Y.resize(0);
+	plt::figure();
 
-	for(float p : p2)
-		std::cout << p << " ";
-	std::cout << "\n" << squareDifference(p2, need_to_be) << std::endl;
+	//particle swarm count
+	for(float m = 100; m <= 1000; m += 100) {
+		X.push_back(m);
 
-	std::vector<float> p0 = GeneticAlgorythm(DIM, 1000, objFunction, 50, 0.5, 0.4, limits);
+		float kvadrat;
+		for (int j = 0; j < 100; j++){
+			point ans = ParticleSwarm(2, objFunction, limits, m, 1000, 0.9, 1, 1);
+			kvadrat += squareDifference(ans, global_minimum);
+		}
+		kvadrat /= 100;
+		Y.push_back(kvadrat);
+	}
+	normalize(Y);
+	plt::plot(X, Y,  "o-");
+	plt::xlabel("Кількість частинок");
+	plt::ylabel("Середнє значення різниці квадратів");
+	std::cout << "Plot 6 ready..." << std::endl;
 
-		for(float p : p0)
-			std::cout << p << " ";
-		std::cout << "\n" << squareDifference(p0, need_to_be) << std::endl;
+	X.resize(0);
+	Y.resize(0);
 
+	//particle swarm testing
+	for (int j = 0; j < 100; j++){
+		point ans = ParticleSwarm(2, objFunction, limits, 200, 1250, 0.9, 1.5, 1);
+		X.push_back(ans[0]);
+		Y.push_back(ans[1]);
+	}
+	plt::plot(X, Y, "o");
+	plt::xlabel("x1");
+	plt::ylabel("x2");
+	plt::xlim(-1000, 1000);
+	plt::ylim(-1000, 1000);
+	plt::plot({global_minimum[0]},{global_minimum[1]},"ro");
+	plt::figure();
+
+	std::cout << "Plot 7 ready..." << std::endl;
+
+	//annealing testing
+	for(int i = 0; i < 100; i++) {
+		point ans = CauchyAnnealing(2, objFunction, limits, 10000, 0.005, 1);
+		X.push_back(ans[0]);
+		Y.push_back(ans[1]);
+		std::cout << i << std::endl;
+	}
+
+	plt::plot(X, Y, "o");
+	plt::xlabel("x1");
+	plt::ylabel("x2");
+	plt::plot({global_minimum[0]},{global_minimum[1]},"ro");
+	plt::xlim(-600, 600);
+	plt::ylim(-600, 600);
+
+	std::cout << "Plot 8 ready..." << std::endl;
+
+	plt::show();
 }
